@@ -109,6 +109,8 @@ nav h1 a {
   background-color: #3397DB;
   align-items: center;
   padding: 10px;
+  display: flex;
+  flex-flow: row wrap;
 }
 .filter-options h2 {
   color: white;
@@ -188,8 +190,25 @@ nav h1 a {
 }
 
 @media screen and (max-width: 350px) {
-  .restaurant-neighborhood {
+  .restaurant-neighborhood,
+  .filter-options h2 {
     display: none;
+  }
+}
+
+@media screen and (max-width: 400px) {
+  .filter-options select {
+    width: 100%;
+  }
+}
+
+@media screen and (min-width: 401px) and (max-width: 579px) {
+  .filter-options h2 {
+    width: 100%;
+  }
+
+  .filter-options select {
+    width: calc(50% - 20px);
   }
 }
 
@@ -205,6 +224,16 @@ nav h1 a {
 
   #restaurants-list li:nth-child(even) {
     margin-left: 0px;
+  }
+}
+
+@media screen and (min-width: 580px) {
+  .filter-options h2 {
+    width: 100px;
+  }
+
+  .filter-options select {
+    width: 200px;
   }
 }
 
