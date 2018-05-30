@@ -4,12 +4,26 @@ let restaurants,
 var map
 var markers = []
 
+registerServiceWorker = (callback) => {
+  if (!navigator.serviceWorker)
+    return;
+
+  navigator.serviceWorker.register('/sw.js')
+  .then((reg) => {
+    callback();
+  })
+  .catch(() => {
+  });
+};
+
 /**
  * Fetch neighborhoods and cuisines as soon as the page is loaded.
  */
 document.addEventListener('DOMContentLoaded', (event) => {
-  fetchNeighborhoods();
-  fetchCuisines();
+  registerServiceWorker(() => {
+    fetchNeighborhoods();
+    fetchCuisines();
+  });
 });
 
 /**
