@@ -147,7 +147,14 @@ class DBHelper {
    * Restaurant image URL.
    */
   static imageUrlForRestaurant(restaurant) {
-    return (`/img/${restaurant.photograph}`);
+    let name = restaurant.photograph ? `${restaurant.photograph}` : null;
+    if (!name) {
+      name = `${restaurant.id}`;
+    }
+    if (name.indexOf('.jpg') === -1) {
+      name += '.jpg';
+    }
+    return (`/img/${name}`);
   }
 
   /**
