@@ -12,14 +12,51 @@ class DBHelper {
     return `http://localhost:${port}/restaurants`;
   }
 
+  static loadRestaurantsData() {
+    if (!('indexedDB' in window)) {
+      return fetch(DBHelper.DATABASE_URL).then((data) => {
+        return data.json();
+      });
+    }
+
+    var dbPromise = idb.open('restaurants-db', 1, function(upgradeDb) {
+      if (!upgradeDb.objectStoreNames.contains('restaurants')) {
+        upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
+      }
+    });
+
+    return dbPromise.then(function(db) {
+      var tx = db.transaction('restaurants', 'readwrite');
+      var store = tx.objectStore('restaurants');
+      return store.get('all');
+    }).then(function(dbData) {
+      if (!dbData) {
+        return fetch(DBHelper.DATABASE_URL).then((data) => {
+          return data.json();
+        }).then(function(fetchedData) {
+          return dbPromise.then(function(db) {
+            var tx = db.transaction('restaurants', 'readwrite');
+            var store = tx.objectStore('restaurants');
+            var item = {
+              id : 'all',
+              data: fetchedData
+            };
+            store.add(item);
+            return tx.complete;
+          }).then(function(result) {
+            return fetchedData;
+          });
+        });
+      }
+      return dbData.data;
+    });
+  }
+
   /**
    * Fetch all restaurants.
    */
   static fetchRestaurants(callback) {
-    return fetch(DBHelper.DATABASE_URL)
-    .then((data) => {
-      return data.json();
-    })
+    return DBHelper.loadRestaurantsData()
     .then((data) => {
       callback(null, data);
     })
