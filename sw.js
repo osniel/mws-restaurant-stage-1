@@ -10,9 +10,11 @@ self.addEventListener('install', function(event) {
       caches.open(staticCacheName).then(function(cache) {
         return cache.addAll([
           '/',
+          '/restaurant.html',
           'js/main.js',
           'js/dbhelper.js',
           'js/restaurant_info.js',
+          'js/idb.js',
           'css/styles.css'
         ]);
       })
@@ -40,6 +42,10 @@ self.addEventListener('activate', function(event) {
     if (requestUrl.origin === location.origin) {
       if (requestUrl.pathname === '/') {
         event.respondWith(caches.match('/'));
+        return;
+      }
+      if (requestUrl.pathname === '/restaurant.html') {
+        event.respondWith(caches.match('/restaurant.html'));
         return;
       }
       if (requestUrl.pathname.startsWith('/img/')) {
