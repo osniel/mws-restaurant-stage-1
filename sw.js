@@ -41,7 +41,10 @@ self.addEventListener('activate', function(event) {
   
     if (requestUrl.origin === location.origin) {
       if (requestUrl.pathname === '/') {
-        event.respondWith(caches.match('/'));
+        event.respondWith(caches.match('/').then(response => {
+          response.headers.append('Cache-Control', 'max-age=31536000');
+          return response;
+        }));
         return;
       }
       if (requestUrl.pathname === '/restaurant.html') {
@@ -56,6 +59,9 @@ self.addEventListener('activate', function(event) {
   
     event.respondWith(
       caches.match(event.request).then(function(response) {
+        if (response) {
+          response.headers.append('Cache-Control', 'max-age=31536000');
+        }
         return response || fetch(event.request);
       })
     );
@@ -66,7 +72,10 @@ self.addEventListener('activate', function(event) {
   
     return caches.open(contentImgsCache).then(function(cache) {
       return cache.match(storageUrl).then(function(response) {
-        if (response) return response;
+        if (response) {
+          response.headers.append('Cache-Control', 'max-age=31536000');
+          return response;
+        }
   
         return fetch(request).then(function(networkResponse) {
           cache.put(storageUrl, networkResponse.clone());
