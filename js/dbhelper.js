@@ -12,6 +12,38 @@ class DBHelper {
     return `http://localhost:${port}/restaurants`;
   }
 
+  static openRestaurantsDB() {
+    return idb.open('restaurants-db', 1, function(upgradeDb) {
+      if (!upgradeDb.objectStoreNames.contains('restaurants')) {
+        upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
+      }
+    });
+  }
+
+  static saveRestaurantData(restaurant) {
+    if (!restaurant)
+      return restaurant;
+
+    if (!('indexedDB' in window)) {
+      return restaurant;
+    }
+
+    var dbPromise = DBHelper.openRestaurantsDB();
+
+    return dbPromise.then(function(db) {
+      var tx = db.transaction('restaurants', 'readwrite');
+      var store = tx.objectStore('restaurants');
+      var item = {
+        id : restaurant.id,
+        data: restaurant
+      };
+      store.put(item);
+      return tx.complete;
+    }).then(function(result) {
+      return restaurant;
+    });
+  }
+
   static loadRestaurantsData() {
     if (!('indexedDB' in window)) {
       return fetch(DBHelper.DATABASE_URL).then((data) => {
@@ -19,36 +51,37 @@ class DBHelper {
       });
     }
 
-    var dbPromise = idb.open('restaurants-db', 1, function(upgradeDb) {
-      if (!upgradeDb.objectStoreNames.contains('restaurants')) {
-        upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
-      }
-    });
+    var dbPromise = DBHelper.openRestaurantsDB();
 
     return dbPromise.then(function(db) {
       var tx = db.transaction('restaurants', 'readwrite');
       var store = tx.objectStore('restaurants');
-      return store.get('all');
+      return store.getAll();
     }).then(function(dbData) {
-      if (!dbData) {
+      if (!dbData || dbData.length === 0) {
         return fetch(DBHelper.DATABASE_URL).then((data) => {
           return data.json();
         }).then(function(fetchedData) {
           return dbPromise.then(function(db) {
             var tx = db.transaction('restaurants', 'readwrite');
             var store = tx.objectStore('restaurants');
-            var item = {
-              id : 'all',
-              data: fetchedData
-            };
-            store.add(item);
+
+            fetchedData.forEach(restaurant => {
+              var item = {
+                id : restaurant.id,
+                data: restaurant
+              };
+              store.add(item);
+            });
+
+            
             return tx.complete;
           }).then(function(result) {
             return fetchedData;
           });
         });
       }
-      return dbData.data;
+      return dbData.map(current => current.data);
     });
   }
 
@@ -201,6 +234,22 @@ class DBHelper {
     const imgSrc = DBHelper.imageUrlForRestaurant(restaurant);
     const imgSrcSmall = imgSrc.replace('.jpg', '-small.jpg');
     return `${imgSrcSmall} 400w, ${imgSrc}`;
+  }
+
+  static favoriteIconForRestaurant(restaurant) {
+    if (DBHelper.isRestaurantFavorite(restaurant)) {
+      return './img/favorite.svg';
+    }
+
+    return './img/add-favorite.svg';
+  }
+
+  static isRestaurantFavorite(restaurant) {
+    if (restaurant && restaurant.is_favorite === 'true') {
+      return true;
+    }
+
+    return false;
   }
 
   /**

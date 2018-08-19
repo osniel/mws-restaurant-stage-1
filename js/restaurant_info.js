@@ -50,7 +50,21 @@ fetchRestaurantFromURL = (callback) => {
  */
 fillRestaurantHTML = (restaurant = self.restaurant) => {
   const name = document.getElementById('restaurant-name');
-  name.innerHTML = restaurant.name;
+  name.innerText = restaurant.name;
+
+  const favoriteIcon = document.getElementById('favorite-icon');
+  favoriteIcon.src =  DBHelper.favoriteIconForRestaurant(restaurant);
+  favoriteIcon.onclick = () => {
+    fetch(`${DBHelper.DATABASE_URL}/${self.restaurant.id}/?is_favorite=${!DBHelper.isRestaurantFavorite(self.restaurant)}`, {
+      method: 'PUT'
+    }).then(response => {
+      return response.json();
+    }).then(updatedRestaurant => {
+      self.restaurant = updatedRestaurant;
+      DBHelper.saveRestaurantData(self.restaurant);
+      favoriteIcon.src =  DBHelper.favoriteIconForRestaurant(self.restaurant);
+    });
+  }
 
   const address = document.getElementById('restaurant-address');
   address.innerHTML = restaurant.address;
