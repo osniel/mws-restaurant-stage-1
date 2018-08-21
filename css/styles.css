@@ -359,6 +359,14 @@ nav h1 a {
   font-style: italic;
 }
 
+#reviews-form .form-row {
+  display: flex;
+}
+
+.form-row .label {
+  width: 20%;
+}
+
 @media screen and (max-width: 350px) {
   #restaurant-container img {
     display: none;

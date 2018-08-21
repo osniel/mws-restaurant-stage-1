@@ -12,6 +12,11 @@ class DBHelper {
     return `http://localhost:${port}/restaurants`;
   }
 
+  static get REVIEWS_URL() {
+    const port = 1337 // Change this to your server port
+    return `http://localhost:${port}/reviews`;
+  }
+
   static openRestaurantsDB() {
     return idb.open('restaurants-db', 1, function(upgradeDb) {
       if (!upgradeDb.objectStoreNames.contains('restaurants')) {

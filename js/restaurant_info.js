@@ -1,10 +1,65 @@
 let restaurant;
 var map;
 
+clearForm = () => {
+  let name = document.getElementById('review-name');
+  name.value = '';
+
+  let rating = document.getElementById('review-rating');
+  rating.value = 5;
+
+  let comments = document.getElementById('review-comments');
+  comments.value = '';
+
+  name.focus();
+}
+
+submitReview = () => {
+  
+  let name = document.getElementById('review-name');
+  if (!name.value) {
+    name.focus();
+    return;
+  }
+  let comments = document.getElementById('review-comments');
+  if (!comments.value) {
+    comments.focus();
+    return;
+  }
+  let rating = document.getElementById('review-rating');
+
+  let review = {
+    restaurant_id: self.restaurant.id,
+    name: name.value,
+    rating: rating.value,
+    comments: comments.value,
+    createdAt: new Date()
+  };
+
+  fetch('http://localhost:1337/reviews/', {
+    method : 'POST',
+    body : JSON.stringify(review),
+    mode: "cors",
+    redirect: "follow",
+    headers: {
+      "Content-Type": "application/json"
+    }
+  }).then(response => {
+    const ul = document.getElementById('reviews-list');
+    ul.appendChild(createReviewHTML(review));
+    clearForm();
+  }).catch(error => {
+    console.log(error);
+  });
+}
+
 /**
  * Initialize Google map, called from HTML.
  */
 window.initMap = () => {
+  let submitReviewButton = document.getElementById('review-submit');
+  submitReviewButton.onclick = submitReview;
+
   fetchRestaurantFromURL((error, restaurant) => {
     if (error) { // Got an error!
       console.error(error);
@@ -82,8 +137,23 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   if (restaurant.operating_hours) {
     fillRestaurantHoursHTML();
   }
-  // fill reviews
-  fillReviewsHTML();
+
+  if (restaurant.reviews === undefined) {
+    const reviewsUrl = `${DBHelper.REVIEWS_URL}/?restaurant_id=${self.restaurant.id}`;
+    fetch(reviewsUrl).then(response => {
+      return response.json();
+    }).then(reviews => {
+      restaurant.reviews = reviews;
+      self.restaurant = restaurant;
+      DBHelper.saveRestaurantData(self.restaurant);
+      // fill reviews
+      fillReviewsHTML();
+    });
+  }
+  else {
+    // fill reviews
+    fillReviewsHTML();
+  }
 }
 
 /**
@@ -113,7 +183,9 @@ fillReviewsHTML = (reviews = self.restaurant.reviews) => {
   const container = document.getElementById('reviews-container');
   const title = document.createElement('h3');
   title.innerHTML = 'Reviews';
-  container.appendChild(title);
+
+  const reviewForm = document.getElementById('reviews-form');
+  container.insertBefore(title, reviewForm);
 
   if (!reviews) {
     const noReviews = document.createElement('p');
@@ -128,6 +200,14 @@ fillReviewsHTML = (reviews = self.restaurant.reviews) => {
   container.appendChild(ul);
 }
 
+parseDate = (date) => {
+  if (Number.isInteger(date)) {
+    return new Date(date / 1000);
+  }
+
+  return new Date(Date.parse(date));
+}
+
 /**
  * Create review HTML and add it to the webpage.
  */
@@ -139,7 +219,7 @@ createReviewHTML = (review) => {
   li.appendChild(name);
 
   const date = document.createElement('p');
-  date.innerHTML = review.date;
+  date.innerHTML = parseDate(review.createdAt);
   li.appendChild(date);
 
   const rating = document.createElement('p');

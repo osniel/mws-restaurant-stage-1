@@ -48,6 +48,32 @@
     <!-- end restaurant -->
     <!-- Beginning reviews -->
     <section id="reviews-container" aria-label="Reviews">
+      <form id="reviews-form">
+        <fieldset>
+          <legend>Share your review:</legend>
+          <p class="form-row">
+            <span class="label"><label for="review-name">Name</label></span>
+            <input id="review-name" name="review-name" type="text" />
+          </p>
+          <p class="form-row">
+            <span class="label"><label for="review-rating">Your rating</label></span>
+            <select id="review-rating" name="review-rating" aria-label="Give your rating">
+              <option value="5" aria-setsize="5" aria-posinset="1">Excellent</option>
+              <option value="4" aria-setsize="5" aria-posinset="2">Great</option>
+              <option value="3" aria-setsize="5" aria-posinset="3">Good</option>
+              <option value="2" aria-setsize="5" aria-posinset="4">So so</option>
+              <option value="1" aria-setsize="5" aria-posinset="5">Bad</option>
+            </select>
+          </p>
+          <p class="form-row">
+            <span class="label"><label for="review-comments">Comments</label></span>
+            <textarea id="review-comments" name="review-comments" type="text" ></textarea>
+          </p>
+          <p class="form-row">
+              <span class="label"></span><button id="review-submit" role="button" type="button">Submit</button>
+          </p>
+        </fieldset>
+      </form>
       <ul id="reviews-list"></ul>
     </section>
     <!-- End reviews -->
