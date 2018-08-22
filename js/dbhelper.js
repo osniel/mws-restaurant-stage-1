@@ -18,10 +18,72 @@ class DBHelper {
   }
 
   static openRestaurantsDB() {
-    return idb.open('restaurants-db', 1, function(upgradeDb) {
-      if (!upgradeDb.objectStoreNames.contains('restaurants')) {
-        upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
+    return idb.open('restaurants-db', 2, function(upgradeDb) {
+      switch (upgradeDb.oldVersion) {
+        case 0: 
+          if (!upgradeDb.objectStoreNames.contains('restaurants')) {
+            upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
+          }
+        case 1:
+          if (!upgradeDb.objectStoreNames.contains('pending-reviews')) {
+            upgradeDb.createObjectStore('pending-reviews', {keyPath: 'date'});
+          }
       }
+    });
+  }
+
+  static savePendingReview(review) {
+    if (!review)
+      return review;
+    
+    if (!('indexedDB' in window)) {
+      return review;
+    }
+
+    var dbPromise = DBHelper.openRestaurantsDB();
+
+    return dbPromise.then(function(db) {
+      var tx = db.transaction('pending-reviews', 'readwrite');
+      var store = tx.objectStore('pending-reviews');
+      store.put({
+        date : review.createdAt,
+        data : review
+      });
+      return tx.complete;
+    }).then(function(result) {
+      return review;
+    });
+  }
+
+  static popPendingReviews() {
+    if (!('indexedDB' in window)) {
+      return [];
+    }
+    
+    var dbPromise = DBHelper.openRestaurantsDB();
+    var tx;
+    var store;
+    var reviews = [];
+
+    return dbPromise.then(function(db) {
+      tx = db.transaction('pending-reviews', 'readwrite');
+      store = tx.objectStore('pending-reviews');
+      
+      return store.getAll();
+    }).then(function(dbData) {
+      if (!dbData || dbData.length === 0) {
+        return dbData;
+      }
+      return dbData.map(current => current.data);
+    }).then(mappedData => {
+      reviews = mappedData;
+      
+      store.clear();
+      return tx.complete;
+    }).then(result => {
+      return reviews;
+    }).catch(error => {
+      return [];
     });
   }
 

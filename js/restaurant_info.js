@@ -14,6 +14,58 @@ clearForm = () => {
   name.focus();
 }
 
+doSubmitPendingReviews = (reviews) => {
+  if (!reviews)
+    return;
+
+  reviews.forEach(review => {
+    doSubmitReview(review, false);
+  });
+}
+
+submitPendingReviews = () => {
+  DBHelper.popPendingReviews().then(reviews => {
+    doSubmitPendingReviews(reviews);
+  }).catch(error => {
+    console.log(error);
+  });
+}
+
+displayReview = (review, display) => {
+  if (!display)
+    return;
+
+  const ul = document.getElementById('reviews-list');
+  ul.appendChild(createReviewHTML(review));
+  clearForm();
+}
+
+doSubmitReview = (review, display) => {
+  fetch('http://localhost:1337/reviews/', {
+    method : 'POST',
+    body : JSON.stringify(review),
+    mode: "cors",
+    redirect: "follow",
+    headers: {
+      "Content-Type": "application/json"
+    }
+  }).then(response => {
+    return response.json();
+  }).then(response => {
+    console.log(response);
+    displayReview(review, display);
+    if (display) {
+      submitPendingReviews();
+    }
+  }).catch(error => {
+    console.log(error);
+    // we're offline :(
+    DBHelper.savePendingReview(review).then(savedReview => {
+      displayReview(savedReview, display);
+    });
+  });
+} 
+
 submitReview = () => {
   
   let name = document.getElementById('review-name');
@@ -36,21 +88,7 @@ submitReview = () => {
     createdAt: new Date()
   };
 
-  fetch('http://localhost:1337/reviews/', {
-    method : 'POST',
-    body : JSON.stringify(review),
-    mode: "cors",
-    redirect: "follow",
-    headers: {
-      "Content-Type": "application/json"
-    }
-  }).then(response => {
-    const ul = document.getElementById('reviews-list');
-    ul.appendChild(createReviewHTML(review));
-    clearForm();
-  }).catch(error => {
-    console.log(error);
-  });
+  doSubmitReview(review, true);
 }
 
 /**
