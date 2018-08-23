@@ -91,12 +91,23 @@ submitReview = () => {
   doSubmitReview(review, true);
 }
 
+isOnline = () => {
+  if (navigator.onLine){
+    console.log('attempt to submit pending reviews');
+    submitPendingReviews();
+  }
+}
+
 /**
  * Initialize Google map, called from HTML.
  */
 window.initMap = () => {
   let submitReviewButton = document.getElementById('review-submit');
   submitReviewButton.onclick = submitReview;
+
+  window.addEventListener('online', isOnline);
+  window.addEventListener('offline', isOnline);
+  isOnline();
 
   fetchRestaurantFromURL((error, restaurant) => {
     if (error) { // Got an error!
