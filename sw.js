@@ -21,6 +21,13 @@ self.addEventListener('install', function(event) {
     );
   });
 
+self.addEventListener('sync', function (event) {
+  console.log(event);
+  if (event.tag === 'reviews-post') {
+    console.log('sync fired');
+  }
+});
+
 self.addEventListener('activate', function(event) {
     event.waitUntil(
       caches.keys().then(function(cacheNames) {
@@ -48,7 +55,9 @@ self.addEventListener('activate', function(event) {
         return;
       }
       if (requestUrl.pathname === '/restaurant.html') {
-        event.respondWith(caches.match('/restaurant.html'));
+        event.respondWith(caches.match('/restaurant.html', {
+          ignoreSearch : true
+        }));
         return;
       }
       if (requestUrl.pathname.startsWith('/img/')) {

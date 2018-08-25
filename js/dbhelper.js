@@ -1,3 +1,4 @@
+
 /**
  * Common database helper functions.
  */
@@ -50,7 +51,39 @@ class DBHelper {
         data : review
       });
       return tx.complete;
-    }).then(function(result) {
+    })
+    .then(function(result) {
+      return review;
+    });
+  }
+
+  static addReviewToRestaurant(review) {
+    if (!review)
+      return review;
+    
+    if (!('indexedDB' in window)) {
+      return review;
+    }
+
+    var dbPromise = DBHelper.openRestaurantsDB();
+
+    return dbPromise.then(function(db) {
+      var tx = db.transaction('restaurants', 'readwrite');
+      var store = tx.objectStore('restaurants');
+      
+      return store.get(review.restaurant_id);
+    })
+    .then(function(restaurantData) {
+      var restaurant = restaurantData.data;
+      var reviews = restaurant.reviews;
+      reviews.push(review);
+      restaurant.reviews = reviews;
+      return DBHelper.saveRestaurantData(restaurant);
+    })
+    .then(function(result) {
+      return review;
+    })
+    .catch(function(error) {
       return review;
     });
   }

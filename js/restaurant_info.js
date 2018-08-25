@@ -1,5 +1,6 @@
 let restaurant;
 var map;
+var pendingId = 1;
 
 clearForm = () => {
   let name = document.getElementById('review-name');
@@ -41,6 +42,10 @@ displayReview = (review, display) => {
 }
 
 doSubmitReview = (review, display) => {
+  var previousPendingId = review.id;
+  if (!display) {
+    review.id = null;
+  }
   fetch('http://localhost:1337/reviews/', {
     method : 'POST',
     body : JSON.stringify(review),
@@ -52,16 +57,33 @@ doSubmitReview = (review, display) => {
   }).then(response => {
     return response.json();
   }).then(response => {
-    console.log(response);
-    displayReview(review, display);
-    if (display) {
-      submitPendingReviews();
-    }
+    DBHelper.addReviewToRestaurant(review).then(savedReview => {
+      var exist = false;
+      if (previousPendingId && document.getElementById(`review-pending-${previousPendingId}`)) {
+        exist = true;
+      } 
+      displayReview(savedReview, display || !exist);
+      if (display) {
+        submitPendingReviews();
+      }
+    });
   }).catch(error => {
     console.log(error);
     // we're offline :(
+    if (previousPendingId)
+      review.id = previousPendingId;
+    else
+      review.id = pendingId;
     DBHelper.savePendingReview(review).then(savedReview => {
+      savedReview.id = null;
       displayReview(savedReview, display);
+      navigator.serviceWorker.ready.then(function(swRegistration) {
+        return swRegistration.sync.register('reviews-post').then(result => {
+          console.log(result);
+        }).catch(error => {
+          console.log(error);
+        });
+      });
     });
   });
 } 
@@ -262,6 +284,10 @@ parseDate = (date) => {
  */
 createReviewHTML = (review) => {
   const li = document.createElement('li');
+  if (!review.id) {
+    li.id = `review-pending-${pendingId}`;
+    pendingId += 1;
+  }
   const name = document.createElement('p');
   name.className = 'reviewer';
   name.innerHTML = review.name;
