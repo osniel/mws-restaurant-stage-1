@@ -19,8 +19,9 @@ doSubmitPendingReviews = (reviews) => {
   if (!reviews)
     return;
 
-  reviews.forEach(review => {
-    doSubmitReview(review, false);
+  reviews.map(async review => {
+    await doSubmitReview(review, false);
+    return review;
   });
 }
 
@@ -46,7 +47,7 @@ doSubmitReview = (review, display) => {
   if (!display) {
     review.id = null;
   }
-  fetch('http://localhost:1337/reviews/', {
+  return fetch('http://localhost:1337/reviews/', {
     method : 'POST',
     body : JSON.stringify(review),
     mode: "cors",
@@ -57,7 +58,7 @@ doSubmitReview = (review, display) => {
   }).then(response => {
     return response.json();
   }).then(response => {
-    DBHelper.addReviewToRestaurant(review).then(savedReview => {
+    return DBHelper.addReviewToRestaurant(review).then(savedReview => {
       var exist = false;
       if (previousPendingId && document.getElementById(`review-pending-${previousPendingId}`)) {
         exist = true;
@@ -74,7 +75,7 @@ doSubmitReview = (review, display) => {
       review.id = previousPendingId;
     else
       review.id = pendingId;
-    DBHelper.savePendingReview(review).then(savedReview => {
+    return DBHelper.savePendingReview(review).then(savedReview => {
       savedReview.id = null;
       displayReview(savedReview, display);
       navigator.serviceWorker.ready.then(function(swRegistration) {
@@ -185,6 +186,9 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
       method: 'PUT'
     }).then(response => {
       return response.json();
+    }).catch(error => {
+      // we're offline :(
+
     }).then(updatedRestaurant => {
       self.restaurant = updatedRestaurant;
       DBHelper.saveRestaurantData(self.restaurant);
