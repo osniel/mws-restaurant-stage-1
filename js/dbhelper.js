@@ -19,7 +19,7 @@ class DBHelper {
   }
 
   static openRestaurantsDB() {
-    return idb.open('restaurants-db', 2, function(upgradeDb) {
+    return idb.open('restaurants-db', 3, function(upgradeDb) {
       switch (upgradeDb.oldVersion) {
         case 0: 
           if (!upgradeDb.objectStoreNames.contains('restaurants')) {
@@ -28,6 +28,10 @@ class DBHelper {
         case 1:
           if (!upgradeDb.objectStoreNames.contains('pending-reviews')) {
             upgradeDb.createObjectStore('pending-reviews', {keyPath: 'date'});
+          }
+        case 2:
+          if (!upgradeDb.objectStoreNames.contains('pending-favorite')) {
+            upgradeDb.createObjectStore('pending-favorite', { keyPath: "id"});
           }
       }
     });
@@ -115,6 +119,65 @@ class DBHelper {
       return tx.complete;
     }).then(result => {
       return reviews;
+    }).catch(error => {
+      return [];
+    });
+  }
+
+  static savePendingFavorite(restaurant) {
+    if (!restaurant)
+      return restaurant;
+    
+    if (!('indexedDB' in window)) {
+      return restaurant;
+    }
+
+    var dbPromise = DBHelper.openRestaurantsDB();
+
+    return dbPromise.then(function(db) {
+      var tx = db.transaction('pending-favorite', 'readwrite');
+      var store = tx.objectStore('pending-favorite');
+      store.put({
+        id : restaurant.id,
+        data : restaurant
+      });
+      return tx.complete;
+    })
+    .then(function(result) {
+      return restaurant;
+    })
+    .catch(function(error) {
+      return restaurant;
+    });
+  }
+
+  static popPendingFavorites() {
+    if (!('indexedDB' in window)) {
+      return [];
+    }
+    
+    var dbPromise = DBHelper.openRestaurantsDB();
+    var tx;
+    var store;
+    var results = [];
+
+    return dbPromise.then(function(db) {
+      tx = db.transaction('pending-favorite', 'readwrite');
+      store = tx.objectStore('pending-favorite');
+      
+      return store.getAll();
+    }).then(function(dbData) {
+      if (!dbData || dbData.length === 0) {
+        return dbData;
+      }
+      return dbData.map(current => current.data);
+    }).then(mappedData => {
+      results = mappedData;
+      
+      store.clear();
+      return tx.complete;
+    }).then(result => {
+      return results;
     }).catch(error => {
       return [];
     });
@@ -345,7 +408,7 @@ class DBHelper {
   }
 
   static isRestaurantFavorite(restaurant) {
-    if (restaurant && restaurant.is_favorite === 'true') {
+    if (restaurant && (restaurant.is_favorite === 'true' || restaurant.is_favorite === true)) {
       return true;
     }
 

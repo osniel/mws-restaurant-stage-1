@@ -2,6 +2,28 @@ let restaurant;
 var map;
 var pendingId = 1;
 
+doSubmitPendingFavorites = (pending) => {
+  if (!pending)
+    return;
+
+    pending.map(async current => {
+    await fetch(`${DBHelper.DATABASE_URL}/${current.id}/?is_favorite=${DBHelper.isRestaurantFavorite(current)}`, {
+      method: 'PUT'
+    }).then(response => {
+      return response.json();
+    });
+    return current;
+  });
+}
+
+submitPendingFavorites = () => {
+  DBHelper.popPendingFavorites().then(pending => {
+    doSubmitPendingFavorites(pending);
+  }).catch(error => {
+    console.log(error);
+  });
+}
+
 clearForm = () => {
   let name = document.getElementById('review-name');
   name.value = '';
@@ -118,6 +140,7 @@ isOnline = () => {
   if (navigator.onLine){
     console.log('attempt to submit pending reviews');
     submitPendingReviews();
+    submitPendingFavorites();
   }
 }
 
@@ -182,13 +205,15 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   const favoriteIcon = document.getElementById('favorite-icon');
   favoriteIcon.src =  DBHelper.favoriteIconForRestaurant(restaurant);
   favoriteIcon.onclick = () => {
+
     fetch(`${DBHelper.DATABASE_URL}/${self.restaurant.id}/?is_favorite=${!DBHelper.isRestaurantFavorite(self.restaurant)}`, {
       method: 'PUT'
     }).then(response => {
       return response.json();
     }).catch(error => {
       // we're offline :(
-
+      self.restaurant.is_favorite = !DBHelper.isRestaurantFavorite(self.restaurant);
+      return DBHelper.savePendingFavorite(restaurant);
     }).then(updatedRestaurant => {
       self.restaurant = updatedRestaurant;
       DBHelper.saveRestaurantData(self.restaurant);
