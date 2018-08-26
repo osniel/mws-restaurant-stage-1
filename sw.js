@@ -1,8 +1,10 @@
 var staticCacheName = 'site-static';
 var contentImgsCache = 'site-content-imgs';
+var otherCacheName = 'site-other';
 var allCaches = [
   staticCacheName,
-  contentImgsCache
+  contentImgsCache,
+  otherCacheName
 ];
 
 self.addEventListener('install', function(event) {
@@ -66,15 +68,27 @@ self.addEventListener('activate', function(event) {
       }
     }
   
-    event.respondWith(
-      caches.match(event.request).then(function(response) {
+    var fetchRequest = event.request.clone();
+    event.respondWith(serveRequest(fetchRequest));
+  });
+
+  function serveRequest(request) {
+    var requestUrl = new URL(request.url);
+  
+    return caches.open(otherCacheName).then(function(cache) {
+      return cache.match(requestUrl).then(function(response) {
         if (response) {
           response.headers.append('Cache-Control', 'max-age=31536000');
+          return response;
         }
-        return response || fetch(event.request);
-      })
-    );
-  });
+  
+        return fetch(request).then(function(networkResponse) {
+          cache.put(requestUrl, networkResponse.clone());
+          return networkResponse;
+        });
+      });
+    });
+  }
 
   function servePhoto(request) {
     var storageUrl = request.url.replace(/-\d+px\.jpg$/, '');
